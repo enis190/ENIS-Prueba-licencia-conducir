@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulacro Licencia A-I</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .contenedor {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .tarjeta {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 28px;
+    }
+
+    h1 { margin: 0 0 8px; font-size: 1.6rem; color: #b91c1c; }
+    .sub { margin: 0 0 24px; color: #64748b; }
+
+    .modos { display: grid; gap: 12px; }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+
+    .btn-principal {
+      background: #b91c1c;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .btn-principal:hover:not(:disabled) { background: #991b1b; }
+    .btn-principal:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
+
+    .btn-secundario {
+      background: #e2e8f0;
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    /* Barra superior del examen */
+    .cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      color: #64748b;
+    }
+    .aciertos { font-weight: 600; color: #15803d; }
+
+    .progreso {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    .progreso-barra { height: 100%; background: #b91c1c; width: 0; transition: width 0.3s; }
+
+    .pregunta { font-size: 1.15rem; font-weight: 600; line-height: 1.5; margin: 0 0 20px; }
+
+    .imagen {
+      display: block;
+      max-width: 100%;
+      max-height: 260px;
+      margin: 0 auto 22px;
+      padding: 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+
+    .alternativas { display: grid; gap: 10px; }
+
+    .alternativa {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      text-align: left;
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      color: #1e293b;
+      line-height: 1.45;
+    }
+    .alternativa:hover:not(:disabled) { border-color: #94a3b8; background: #f1f5f9; }
+    .alternativa:disabled { cursor: default; }
+
+    .letra {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .alternativa.correcta { background: #dcfce7; border-color: #16a34a; }
+    .alternativa.correcta .letra { background: #16a34a; color: #ffffff; }
+    .alternativa.incorrecta { background: #fee2e2; border-color: #dc2626; }
+    .alternativa.incorrecta .letra { background: #dc2626; color: #ffffff; }
+
+    .mensaje {
+      margin: 20px 0 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .mensaje.ok { background: #16a34a; color: #ffffff; }
+    .mensaje.error { background: #dc2626; color: #ffffff; }
+
+    .acciones { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+
+    /* Resultado final */
+    .resultado { text-align: center; }
+    .nota { font-size: 3rem; font-weight: 800; margin: 10px 0; }
+    .aprobado { color: #16a34a; }
+    .desaprobado { color: #dc2626; }
+    .resultado .modos { margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+
+    <!-- Pantalla de inicio -->
+    <section id="inicio" class="tarjeta">
+      <h1>Simulacro de examen de reglas</h1>
+      <p class="sub">Licencia de conducir Clase A - Categoría I · Balotario MTC (200 preguntas)</p>
+      <div class="modos">
+        <button class="btn-principal" data-cantidad="40">Simulacro oficial · 40 preguntas</button>
+        <button class="btn-secundario" data-cantidad="200">Practicar las 200 preguntas (aleatorio)</button>
+        <button class="btn-secundario" data-cantidad="200" data-orden="original">Practicar las 200 preguntas (en orden)</button>
+      </div>
+    </section>
+
+    <!-- Pantalla del examen -->
+    <section id="examen" class="tarjeta" hidden>
+      <div class="cabecera">
+        <span id="contador"></span>
+        <span class="aciertos" id="aciertos"></span>
+      </div>
+      <div class="progreso"><div class="progreso-barra" id="barra"></div></div>
+
+      <p class="pregunta" id="pregunta"></p>
+      <img class="imagen" id="imagen" alt="Imagen referencial de la pregunta" hidden>
+      <div class="alternativas" id="alternativas"></div>
+      <div id="mensaje" class="mensaje" hidden></div>
+
+      <div class="acciones">
+        <!-- Castigo del modo en orden: al fallar hay que retroceder -->
+        <button class="btn-secundario" id="castigoDiez" hidden>Reintentar las últimas 10 preguntas</button>
+        <button class="btn-principal" id="castigoTodo" hidden>Reintentar todo el balotario</button>
+        <button class="btn-principal" id="siguiente" disabled>Siguiente</button>
+      </div>
+    </section>
+
+    <!-- Pantalla de resultado -->
+    <section id="resultado" class="tarjeta resultado" hidden>
+      <h1>Resultado</h1>
+      <p class="nota" id="nota"></p>
+      <p id="veredicto"></p>
+      <div class="modos">
+        <button class="btn-principal" id="reintentar">Volver a intentar</button>
+        <button class="btn-secundario" id="volver">Volver al inicio</button>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="preguntas.js"></script>
+  <script>
+    const LETRAS = ["a", "b", "c", "d"];
+    const MINIMO_APROBAR = 0.875; // 35 de 40 en el examen oficial
+
+    const $ = (id) => document.getElementById(id);
+
+    let examen = [];
+    let indice = 0;
+    let aciertos = 0;
+    let cantidad = 40;
+    let enOrden = false;
+
+    // Mezcla Fisher-Yates para el orden aleatorio
+    function mezclar(lista) {
+      const copia = [...lista];
+      for (let i = copia.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copia[i], copia[j]] = [copia[j], copia[i]];
+      }
+      return copia;
+    }
+
+    function mostrar(pantalla) {
+      ["inicio", "examen", "resultado"].forEach((id) => { $(id).hidden = id !== pantalla; });
+    }
+
+    function iniciar(n, orden = false) {
+      cantidad = n;
+      enOrden = orden;
+      // Se guarda el número original para ubicar su imagen
+      const numeradas = PREGUNTAS.map((q, i) => ({ ...q, n: i + 1 }));
+      examen = (enOrden ? numeradas : mezclar(numeradas)).slice(0, n);
+      indice = 0;
+      aciertos = 0;
+      mostrar("examen");
+      pintarPregunta();
+    }
+
+    function pintarPregunta() {
+      const actual = examen[indice];
+      $("contador").textContent = `Pregunta ${indice + 1} de ${examen.length}`;
+      $("aciertos").textContent = `Aciertos: ${aciertos}`;
+      $("barra").style.width = `${(indice / examen.length) * 100}%`;
+      $("pregunta").textContent = actual.p;
+
+      const imagen = $("imagen");
+      if (CON_IMAGEN.has(actual.n)) {
+        imagen.src = `img/${actual.n}.png`;
+        imagen.hidden = false;
+      } else {
+        imagen.removeAttribute("src");
+        imagen.hidden = true;
+      }
+      $("mensaje").hidden = true;
+      $("castigoDiez").hidden = true;
+      $("castigoTodo").hidden = true;
+      $("siguiente").hidden = false;
+      $("siguiente").disabled = true;
+      $("siguiente").textContent = indice === examen.length - 1 ? "Ver resultado" : "Siguiente";
+
+      const contenedor = $("alternativas");
+      contenedor.innerHTML = "";
+      actual.o.forEach((texto, i) => {
+        const boton = document.createElement("button");
+        boton.className = "alternativa";
+        boton.dataset.letra = LETRAS[i];
+        boton.innerHTML = `<span class="letra">${LETRAS[i]}</span><span></span>`;
+        boton.lastChild.textContent = texto;
+        boton.addEventListener("click", () => responder(boton));
+        contenedor.appendChild(boton);
+      });
+    }
+
+    function responder(elegido) {
+      const correcta = examen[indice].r;
+      const botones = $("alternativas").querySelectorAll(".alternativa");
+      botones.forEach((b) => {
+        b.disabled = true;
+        if (b.dataset.letra === correcta) b.classList.add("correcta");
+      });
+
+      const mensaje = $("mensaje");
+      if (elegido.dataset.letra === correcta) {
+        aciertos++;
+        mensaje.textContent = "Respuesta correcta";
+        mensaje.className = "mensaje ok";
+      } else {
+        elegido.classList.add("incorrecta");
+        mensaje.textContent = `Respuesta incorrecta · La correcta es la alternativa ${correcta})`;
+        mensaje.className = "mensaje error";
+      }
+      mensaje.hidden = false;
+      $("aciertos").textContent = `Aciertos: ${aciertos}`;
+
+      if (enOrden && elegido.dataset.letra !== correcta) {
+        $("siguiente").hidden = true;
+        $("castigoDiez").hidden = false;
+        $("castigoTodo").hidden = false;
+      } else {
+        $("siguiente").disabled = false;
+      }
+    }
+
+    // Retrocede hasta la pregunta indicada; los aciertos de ahí en adelante se descuentan
+    function retroceder(destino) {
+      aciertos = destino;
+      indice = destino;
+      pintarPregunta();
+    }
+
+    function siguiente() {
+      indice++;
+      if (indice < examen.length) {
+        pintarPregunta();
+      } else {
+        terminar();
+      }
+    }
+
+    function terminar() {
+      const aprobado = aciertos / examen.length >= MINIMO_APROBAR;
+      const minimo = Math.ceil(examen.length * MINIMO_APROBAR);
+      $("nota").textContent = `${aciertos} / ${examen.length}`;
+      $("nota").className = `nota ${aprobado ? "aprobado" : "desaprobado"}`;
+      $("veredicto").textContent = aprobado
+        ? `¡Aprobado! Necesitabas al menos ${minimo} respuestas correctas.`
+        : `Desaprobado. Necesitas al menos ${minimo} respuestas correctas. ¡Sigue practicando!`;
+      mostrar("resultado");
+    }
+
+    document.querySelectorAll("#inicio [data-cantidad]").forEach((b) => {
+      b.addEventListener("click", () => iniciar(Number(b.dataset.cantidad), b.dataset.orden === "original"));
+    });
+    $("siguiente").addEventListener("click", siguiente);
+    $("castigoDiez").addEventListener("click", () => retroceder(Math.max(0, indice - 9)));
+    $("castigoTodo").addEventListener("click", () => retroceder(0));
+    $("reintentar").addEventListener("click", () => iniciar(cantidad, enOrden));
+    $("volver").addEventListener("click", () => mostrar("inicio"));
+  </script>
+</body>
+</html>
